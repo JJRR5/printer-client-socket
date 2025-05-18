@@ -72,7 +72,8 @@ socket.on('print_ticket', async (data) => {
     printer.println(`Total: $${total}`);
 
     printer.alignCenter();
-    printer.printQR(qrCodeUrl);
+    printer.println('Escanea el código QR y ganate una emburguiza');
+    printer.printQR(qrCodeUrl, { cellSize: 8 });
     printer.cut();
 
     await printer.execute();
