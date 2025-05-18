@@ -6,9 +6,9 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "node --watch main.js",
-    "lint": "eslint \"./*.js\" --fix",
-    "format": "prettier --write \"./*.js\""
+    "dev": "node --watch ./src/main.js",
+    "lint": "eslint \"./src/*.js\" --fix",
+    "format": "prettier --write \"./src/*.js\""
 
   },
   "keywords": [],
