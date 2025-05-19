@@ -7,12 +7,17 @@ import {
 } from 'node-thermal-printer';
 import process from 'process';
 import { Buffer } from 'buffer';
+import { getShortMexDate, formatPrice, truncateText } from './helpers.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 dotenv.config();
 
 const printer = new ThermalPrinter({
   type: PrinterTypes.EPSON,
-  interface: '/dev/usb/lp0', // or the correct device path for your printer
+  interface: '/dev/usb/lp0',
   characterSet: characterSet.SLOVENIA,
   removeSpecialCharacters: false,
   lineCharacter: '-',
@@ -40,6 +45,50 @@ socket.on('disconnect', (reason) => {
   console.warn('[⚠️] Disconnected:', reason);
 });
 
+const printHeader = async (printer, order, customer) => {
+  printer.alignCenter();
+  const logoPath = path.resolve(__dirname, 'assets', 'logo-resized.png');
+  await printer.printImage(logoPath);
+  printer.println('');
+  printer.bold(true);
+  printer.println(`Número de orden: ${order}`);
+  printer.println(`Emburguizer: ${customer}`);
+  printer.println('Fecha: ' + getShortMexDate(new Date()));
+  printer.drawLine();
+  printer.bold(false);
+};
+
+const printSaleOrderItems = (printer, items, total) => {
+  printer.alignLeft();
+  printer.println('Cant  Producto           P.Unit    Subtot');
+  printer.drawLine();
+  items.forEach((item) => {
+    const { quantity, name, price } = item;
+    const subtotal = price * quantity;
+
+    const qty = `${quantity}x`.padEnd(5);
+    const prod = truncateText(name, 18);
+    const unit = formatPrice(price).padStart(9);
+    const totalTxt = formatPrice(subtotal).padStart(10);
+
+    printer.println(`${qty}${prod}${unit}${totalTxt}`);
+  });
+  printer.drawLine();
+  printer.alignRight();
+  printer.bold(true);
+  printer.println(`Total: ${formatPrice(total)}`);
+  printer.println('');
+  printer.bold(false);
+};
+
+const printFooter = (printer, qrCodeUrl) => {
+  printer.alignCenter();
+  printer.println('¡Escanea el código QR y ganate una emburguiza!');
+  printer.println('');
+  printer.printQR(qrCodeUrl, { cellSize: 5 });
+  printer.cut();
+};
+
 socket.on('print_ticket', async (data) => {
   const isConnected = await printer.isPrinterConnected();
   if (!isConnected) {
@@ -51,30 +100,9 @@ socket.on('print_ticket', async (data) => {
   try {
     printer.clear();
 
-    printer.alignCenter();
-    printer.bold(true);
-    printer.setTypeFontA();    
-    printer.println(`Venta #${order}`);
-    printer.println(`Cliente: ${customer}`);
-    printer.println('Fecha: ' + new Date().toLocaleString());
-    printer.drawLine();
-
-    printer.bold(false);
-    printer.setTypeFontB();
-    printer.setTextSize(10, 10);
-    printer.alignLeft();
-    items.forEach((item) => {
-      printer.println(`${item.quantity}x ${item.name} - $${item.price}`);
-    });
-
-    printer.drawLine();
-    printer.alignRight();
-    printer.println(`Total: $${total}`);
-
-    printer.alignCenter();
-    printer.println('Escanea el código QR y ganate una emburguiza');
-    printer.printQR(qrCodeUrl, { cellSize: 8 });
-    printer.cut();
+    await printHeader(printer, order, customer);
+    printSaleOrderItems(printer, items, total);
+    printFooter(printer, qrCodeUrl);
 
     await printer.execute();
   } catch (err) {
