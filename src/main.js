@@ -58,23 +58,25 @@ const printHeader = async (printer, order, customer) => {
   printer.bold(false);
 };
 
-const printSaleOrderItems = (printer, items, total) => {
+const printSaleOrderItems = (printer, items, subtotal, tax, total) => {
   printer.alignLeft();
   printer.println('Cant  Producto           P.Unit    Subtot');
   printer.drawLine();
   items.forEach((item) => {
     const { quantity, name, price } = item;
-    const subtotal = price * quantity;
+    const itemSubtotal = price * quantity;
 
     const qty = `${quantity}x`.padEnd(5);
     const prod = truncateText(name, 18);
     const unit = formatPrice(price).padStart(9);
-    const totalTxt = formatPrice(subtotal).padStart(10);
+    const totalTxt = formatPrice(itemSubtotal).padStart(10);
 
     printer.println(`${qty}${prod}${unit}${totalTxt}`);
   });
   printer.drawLine();
   printer.alignRight();
+  printer.println(`Subtotal: ${formatPrice(subtotal)}`);
+  printer.println(`IVA: ${formatPrice(tax)}`);
   printer.bold(true);
   printer.println(`Total: ${formatPrice(total)}`);
   printer.println('');
@@ -95,13 +97,13 @@ socket.on('print_ticket', async (data) => {
     console.error('[❌] Printer is not connected');
     return;
   }
-  const { order, customer, items, total, qrCodeUrl } = data;
+  const { order, customer, items, subtotal, tax, total, qrCodeUrl } = data;
   console.log('[🖨️] Printing ticket:', data);
   try {
     printer.clear();
 
     await printHeader(printer, order, customer);
-    printSaleOrderItems(printer, items, total);
+    printSaleOrderItems(printer, items, subtotal, tax, total);
     printFooter(printer, qrCodeUrl);
 
     await printer.execute();
