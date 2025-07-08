@@ -58,6 +58,21 @@ const printHeader = async (printer, order, customer) => {
   printer.bold(false);
 };
 
+const printPriceSection = (printer, subtotal, tax, total, showTax = false) => {
+  printer.alignRight();
+  if (showTax) {
+    printer.println(`Subtotal: ${formatPrice(subtotal)}`);
+    printer.println(`IVA: ${formatPrice(tax)}`);
+    printer.bold(true);
+    printer.println(`Total: ${formatPrice(total)}`);
+  } else {
+    printer.bold(true);
+    printer.println(`Total: ${formatPrice(subtotal)}`);
+  }
+  printer.println('');
+  printer.bold(false);
+};
+
 const printSaleOrderItems = (printer, items, subtotal, tax, total) => {
   printer.alignLeft();
   printer.println('Cant  Producto           P.Unit    Subtot');
@@ -74,13 +89,7 @@ const printSaleOrderItems = (printer, items, subtotal, tax, total) => {
     printer.println(`${qty}${prod}${unit}${totalTxt}`);
   });
   printer.drawLine();
-  printer.alignRight();
-  printer.println(`Subtotal: ${formatPrice(subtotal)}`);
-  printer.println(`IVA: ${formatPrice(tax)}`);
-  printer.bold(true);
-  printer.println(`Total: ${formatPrice(total)}`);
-  printer.println('');
-  printer.bold(false);
+  printPriceSection(printer, subtotal, tax, total, false);
 };
 
 const printFooter = (printer, qrCodeUrl) => {
@@ -88,6 +97,7 @@ const printFooter = (printer, qrCodeUrl) => {
   printer.println('¡Escanea el código QR y ganate una emburguiza!');
   printer.println('');
   printer.printQR(qrCodeUrl, { cellSize: 5 });
+  printer.println('¡Gracias por tu compra!');
   printer.cut();
 };
 
