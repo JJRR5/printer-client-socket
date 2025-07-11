@@ -45,7 +45,7 @@ socket.on('disconnect', (reason) => {
   console.warn('[⚠️] Disconnected:', reason);
 });
 
-const printHeader = async (printer, order, customer) => {
+const printHeader = async (printer, order, customer='Cliente sin nombre') => {
   printer.alignCenter();
   const logoPath = path.resolve(__dirname, 'assets', 'logo-resized.png');
   await printer.printImage(logoPath);
@@ -60,14 +60,14 @@ const printHeader = async (printer, order, customer) => {
 
 const printPriceSection = (printer, subtotal, tax, total, showTax = false) => {
   printer.alignRight();
-  if (showTax) {
+  if (showTax && tax > 0 && subtotal > 0) {
     printer.println(`Subtotal: ${formatPrice(subtotal)}`);
     printer.println(`IVA: ${formatPrice(tax)}`);
     printer.bold(true);
     printer.println(`Total: ${formatPrice(total)}`);
   } else {
     printer.bold(true);
-    printer.println(`Total: ${formatPrice(subtotal)}`);
+    printer.println(`Total: ${formatPrice(total)}`);
   }
   printer.println('');
   printer.bold(false);
