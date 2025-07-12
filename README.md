@@ -39,3 +39,6 @@ npm install
 
 - Ensure your printer is connected and properly configured.
 - The printer charset is set to `SLOVENIA`. Adjust if needed for your model.
+
+# Check status of the service
+sudo systemctl enable printer-client.service
