@@ -45,7 +45,7 @@ socket.on('disconnect', (reason) => {
   console.warn('[⚠️] Disconnected:', reason);
 });
 
-const printHeader = async (printer, order, customer='Cliente sin nombre') => {
+const printHeader = async (printer, order, customer = 'Cliente sin nombre') => {
   printer.alignCenter();
   const logoPath = path.resolve(__dirname, 'assets', 'logo-resized.png');
   await printer.printImage(logoPath);
@@ -101,6 +101,33 @@ const printFooter = (printer, qrCodeUrl) => {
   printer.cut();
 };
 
+const printKitchenOrder = (printer, customer, items) => {
+  printer.clear();
+  printer.alignCenter();
+  printer.bold(true);
+  printer.println('');
+  printer.println(
+    `Cliente: ${customer} - Fecha: ${getShortMexDate(new Date())}`,
+  );
+  printer.bold(false);
+  printer.drawLine();
+
+  printer.alignLeft();
+  printer.println('CANT  PRODUCTO');
+  printer.drawLine();
+
+  items.forEach((item) => {
+    const qty = `${item.quantity}x`.padEnd(6);
+    const product = truncateText(item.name, 26);
+    printer.println(`${qty}${product}`);
+  });
+
+  printer.drawLine();
+  printer.alignCenter();
+  printer.println('');
+  printer.cut();
+};
+
 socket.on('print_ticket', async (data) => {
   const isConnected = await printer.isPrinterConnected();
   if (!isConnected) {
@@ -111,11 +138,14 @@ socket.on('print_ticket', async (data) => {
   console.log('[🖨️] Printing ticket:', data);
   try {
     printer.clear();
-
     await printHeader(printer, order, customer);
     printSaleOrderItems(printer, items, subtotal, tax, total);
     printFooter(printer, qrCodeUrl);
+    await printer.execute();
 
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    printKitchenOrder(printer, customer, items);
     await printer.execute();
   } catch (err) {
     console.error('[❌] Error printing:', err);
