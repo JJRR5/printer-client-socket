@@ -101,7 +101,19 @@ const printFooter = (printer, qrCodeUrl) => {
   printer.cut();
 };
 
-const printKitchenOrder = (printer, customer, items) => {
+const printNoteSection = (printer, note) => {
+  printer.alignLeft();
+  printer.drawLine();
+  printer.bold(true);
+  printer.setTextSize(0, 0);
+  printer.println('NOTAS ESPECIALES:');
+  printer.bold(false);
+  printer.println(truncateText(note, 42));
+  printer.setTextSize(1, 1);
+  printer.drawLine();
+};
+
+const printKitchenOrder = (printer, customer, items, note) => {
   printer.clear();
   printer.alignCenter();
   printer.bold(true);
@@ -123,6 +135,17 @@ const printKitchenOrder = (printer, customer, items) => {
   });
 
   printer.drawLine();
+
+  if (note && note.trim()) {
+    printer.bold(true);
+    printer.setTextSize(0, 0);
+    printer.println('NOTAS:');
+    printer.bold(false);
+    printer.println(truncateText(note, 32));
+    printer.setTextSize(1, 1);
+    printer.drawLine();
+  }
+
   printer.alignCenter();
   printer.println('');
   printer.cut();
@@ -134,18 +157,22 @@ socket.on('print_ticket', async (data) => {
     console.error('[❌] Printer is not connected');
     return;
   }
-  const { order, customer, items, subtotal, tax, total, qrCodeUrl } = data;
+  const { order, customer, items, subtotal, tax, total, qrCodeUrl, note } =
+    data;
   console.log('[🖨️] Printing ticket:', data);
   try {
     printer.clear();
     await printHeader(printer, order, customer);
     printSaleOrderItems(printer, items, subtotal, tax, total);
+    if (note && note.trim()) {
+      printNoteSection(printer, note);
+    }
     printFooter(printer, qrCodeUrl);
     await printer.execute();
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    printKitchenOrder(printer, customer, items);
+    printKitchenOrder(printer, customer, items, note);
     await printer.execute();
   } catch (err) {
     console.error('[❌] Error printing:', err);
