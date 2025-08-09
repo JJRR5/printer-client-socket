@@ -65,35 +65,31 @@ const printPriceSection = (
   total,
   discountAmount = 0,
   showTax = false,
+  paid = false,
 ) => {
   printer.alignRight();
 
   if (showTax && tax > 0 && subtotal > 0) {
     printer.println(`Subtotal: ${formatPrice(subtotal)}`);
     printer.println(`IVA: ${formatPrice(tax)}`);
-    if (discountAmount > 0) {
-      printer.println(`Descuento: -${formatPrice(discountAmount)}`);
-    }
-    printer.bold(true);
-    printer.println(`Total: ${formatPrice(total)}`);
-    printer.println('');
-    printer.bold(false);
-    return;
+  } else if (discountAmount > 0) {
+    const originalTotal = total + discountAmount;
+    printer.println(`Subtotal: ${formatPrice(originalTotal)}`);
   }
 
   if (discountAmount > 0) {
-    const originalTotal = total + discountAmount;
-    printer.println(`Subtotal: ${formatPrice(originalTotal)}`);
     printer.println(`Descuento: -${formatPrice(discountAmount)}`);
-    printer.bold(true);
-    printer.println(`Total: ${formatPrice(total)}`);
-    printer.println('');
-    printer.bold(false);
-    return;
   }
 
   printer.bold(true);
   printer.println(`Total: ${formatPrice(total)}`);
+
+  if (paid) {
+    printer.alignCenter();
+    printer.println('');
+    printer.println('*** PAGADO ***');
+  }
+
   printer.println('');
   printer.bold(false);
 };
@@ -105,6 +101,7 @@ const printSaleOrderItems = (
   tax,
   total,
   discountAmount = 0,
+  paid = false,
 ) => {
   printer.alignLeft();
   printer.println('Cant  Producto           P.Unit    Subtot');
@@ -121,15 +118,17 @@ const printSaleOrderItems = (
     printer.println(`${qty}${prod}${unit}${totalTxt}`);
   });
   printer.drawLine();
-  printPriceSection(printer, subtotal, tax, total, discountAmount, false);
+  printPriceSection(printer, subtotal, tax, total, discountAmount, false, paid);
 };
 
 const printFooter = (printer, qrCodeUrl) => {
   printer.alignCenter();
+  printer.setTextSize(0, 0);
   printer.println('¡Escanea el código QR y ganate una emburguiza!');
   printer.println('');
   printer.printQR(qrCodeUrl, { cellSize: 5 });
   printer.println('¡Gracias por tu compra!');
+  printer.setTextSize(1, 1);
   printer.cut();
 };
 
@@ -168,22 +167,16 @@ const printKitchenOrder = (printer, customer, items, note) => {
 
   printer.drawLine();
 
-  if (!note || !note.trim()) {
-    printer.alignCenter();
-    printer.println('');
-    printer.cut();
-    return;
+  if (note && note.trim()) {
+    printer.bold(true);
+    printer.setTextSize(0, 0);
+    printer.println('NOTAS:');
+    printer.bold(false);
+    printer.println(truncateText(note, 32));
+    printer.setTextSize(1, 1);
+    printer.drawLine();
   }
 
-  printer.bold(true);
-  printer.setTextSize(0, 0);
-  printer.println('NOTAS:');
-  printer.bold(false);
-  printer.println(truncateText(note, 32));
-  printer.setTextSize(1, 1);
-  printer.drawLine();
-  printer.alignCenter();
-  printer.println('');
   printer.cut();
 };
 
@@ -203,6 +196,7 @@ socket.on('print_ticket', async (data) => {
     discountAmount,
     qrCodeUrl,
     note,
+    paid,
   } = data;
   console.log('[🖨️] Printing ticket:', data);
   try {
@@ -215,6 +209,7 @@ socket.on('print_ticket', async (data) => {
       tax,
       total,
       discountAmount || 0,
+      paid || false,
     );
 
     if (note && note.trim()) {
