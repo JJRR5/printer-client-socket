@@ -64,25 +64,34 @@ const printPriceSection = (
   tax,
   total,
   discountAmount = 0,
+  deliveryFee = 0,
+  paymentMethod = '',
   showTax = false,
   paid = false,
 ) => {
   printer.alignRight();
 
-  if (showTax && tax > 0 && subtotal > 0) {
-    printer.println(`Subtotal: ${formatPrice(subtotal)}`);
+  printer.println(`Subtotal: ${formatPrice(subtotal)}`);
+  
+  if (showTax && tax > 0) {
     printer.println(`IVA: ${formatPrice(tax)}`);
-  } else if (discountAmount > 0) {
-    const originalTotal = total + discountAmount;
-    printer.println(`Subtotal: ${formatPrice(originalTotal)}`);
   }
-
+  
   if (discountAmount > 0) {
     printer.println(`Descuento: -${formatPrice(discountAmount)}`);
+  }
+  
+  if (deliveryFee > 0) {
+    printer.println(`Envío: ${formatPrice(deliveryFee)}`);
   }
 
   printer.bold(true);
   printer.println(`Total: ${formatPrice(total)}`);
+  printer.bold(false);
+
+  if (paymentMethod) {
+    printer.println(`Pago: ${paymentMethod}`);
+  }
 
   if (paid) {
     printer.alignCenter();
@@ -91,7 +100,6 @@ const printPriceSection = (
   }
 
   printer.println('');
-  printer.bold(false);
 };
 
 const printSaleOrderItems = (
@@ -101,6 +109,8 @@ const printSaleOrderItems = (
   tax,
   total,
   discountAmount = 0,
+  deliveryFee = 0,
+  paymentMethod = '',
   paid = false,
 ) => {
   printer.alignLeft();
@@ -118,7 +128,7 @@ const printSaleOrderItems = (
     printer.println(`${qty}${prod}${unit}${totalTxt}`);
   });
   printer.drawLine();
-  printPriceSection(printer, subtotal, tax, total, discountAmount, false, paid);
+  printPriceSection(printer, subtotal, tax, total, discountAmount, deliveryFee, paymentMethod, false, paid);
 };
 
 const printFooter = (printer, qrCodeUrl) => {
@@ -194,6 +204,8 @@ socket.on('print_ticket', async (data) => {
     tax,
     total,
     discountAmount,
+    deliveryFee,
+    paymentMethod,
     qrCodeUrl,
     note,
     paid,
@@ -209,6 +221,8 @@ socket.on('print_ticket', async (data) => {
       tax,
       total,
       discountAmount || 0,
+      deliveryFee || 0,
+      paymentMethod || '',
       paid || false,
     );
 
@@ -217,9 +231,10 @@ socket.on('print_ticket', async (data) => {
     }
 
     printFooter(printer, qrCodeUrl);
+
     await printer.execute();
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 300));
 
     printKitchenOrder(printer, customer, items, note);
     await printer.execute();
