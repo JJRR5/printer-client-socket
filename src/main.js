@@ -81,9 +81,7 @@ const printPriceSection = (
     printer.println(`Descuento: -${formatPrice(discountAmount)}`);
   }
   
-  if (deliveryFee > 0) {
-    printer.println(`Envío: ${formatPrice(deliveryFee)}`);
-  }
+  printer.println(`Envío: ${deliveryFee > 0 ? formatPrice(deliveryFee) : 'Gratis'}`);
 
   printer.bold(true);
   printer.println(`Total: ${formatPrice(total)}`);
