@@ -135,7 +135,7 @@ const printFooter = (printer, qrCodeUrl) => {
   printer.println('¡Escanea el código QR y ganate una emburguiza!');
   printer.println('');
   printer.printQR(qrCodeUrl, { cellSize: 5 });
-  printer.println('¡Gracias por tu compra!');
+  printer.println('¡Felices fiestas de parte de todo el equipo de Emburguiza!');
   printer.setTextSize(1, 1);
   printer.cut();
 };
