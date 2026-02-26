@@ -72,16 +72,18 @@ const printPriceSection = (
   printer.alignRight();
 
   printer.println(`Subtotal: ${formatPrice(subtotal)}`);
-  
+
   if (showTax && tax > 0) {
     printer.println(`IVA: ${formatPrice(tax)}`);
   }
-  
+
   if (discountAmount > 0) {
     printer.println(`Descuento: -${formatPrice(discountAmount)}`);
   }
-  
-  printer.println(`Envío: ${deliveryFee > 0 ? formatPrice(deliveryFee) : 'Gratis'}`);
+
+  printer.println(
+    `Envío: ${deliveryFee > 0 ? formatPrice(deliveryFee) : 'Gratis'}`,
+  );
 
   printer.bold(true);
   printer.println(`Total: ${formatPrice(total)}`);
@@ -115,7 +117,7 @@ const printSaleOrderItems = (
   printer.println('Cant  Producto           P.Unit    Subtot');
   printer.drawLine();
   items.forEach((item) => {
-    const { quantity, name, price } = item;
+    const { quantity, name, price, upsells } = item;
     const itemSubtotal = price * quantity;
 
     const qty = `${quantity}x`.padEnd(5);
@@ -124,9 +126,25 @@ const printSaleOrderItems = (
     const totalTxt = formatPrice(itemSubtotal).padStart(10);
 
     printer.println(`${qty}${prod}${unit}${totalTxt}`);
+
+    if (upsells && upsells.length > 0) {
+      upsells.forEach((upsell) => {
+        printer.println(`     + ${truncateText(upsell, 35)}`);
+      });
+    }
   });
   printer.drawLine();
-  printPriceSection(printer, subtotal, tax, total, discountAmount, deliveryFee, paymentMethod, false, paid);
+  printPriceSection(
+    printer,
+    subtotal,
+    tax,
+    total,
+    discountAmount,
+    deliveryFee,
+    paymentMethod,
+    false,
+    paid,
+  );
 };
 
 const printFooter = (printer, qrCodeUrl) => {
@@ -171,6 +189,12 @@ const printKitchenOrder = (printer, customer, items, note) => {
     const qty = `${item.quantity}x`.padEnd(6);
     const product = truncateText(item.name, 26);
     printer.println(`${qty}${product}`);
+
+    if (item.upsells && item.upsells.length > 0) {
+      item.upsells.forEach((upsell) => {
+        printer.println(`      + ${truncateText(upsell, 24)}`);
+      });
+    }
   });
 
   printer.drawLine();
